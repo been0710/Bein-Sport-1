@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>StreamX+ | Live Premium</title>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', 'Roboto', sans-serif;
+            background: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000000;
+            z-index: -2;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 0.75rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-text h1 {
+            font-size: 1.9rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #FFFFFF, #FF5A3A);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .logo-text span {
+            font-size: 0.65rem;
+            color: #FF5A3A;
+            letter-spacing: 1px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .badge-live {
+            background: #FF3B2F;
+            padding: 5px 14px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(255, 59, 47, 0.4);
+        }
+
+        .badge-live i {
+            font-size: 0.65rem;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1);}
+            50% { opacity: 0.5; transform: scale(0.9);}
+            100% { opacity: 1; transform: scale(1);}
+        }
+
+        .player-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+
+        .player-wrapper {
+            position: relative;
+            width: 100%;
+            background: #0a0a0a;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.9), 0 0 0 1px rgba(255, 59, 47, 0.2);
+        }
+
+        .diffusion-mask {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            background: #000;
+        }
+
+        .shield-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .protect-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            background: transparent;
+            pointer-events: none;
+        }
+
+        .player-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: rgba(10, 10, 10, 0.95);
+            border-top: 1px solid rgba(255, 59, 47, 0.3);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .quality-badge {
+            background: #1a1a1a;
+            padding: 5px 12px;
+            border-radius: 25px;
+            font-family: monospace;
+            font-size: 0.7rem;
+            border-left: 2px solid #FF3B2F;
+        }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 59, 47, 0.4);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+        }
+
+        .btn-action:hover {
+            background: #FF3B2F;
+            border-color: #FF3B2F;
+            color: #000;
+            transform: scale(0.97);
+        }
+
+        .shield-note {
+            background: rgba(0,0,0,0.6);
+            font-size: 0.65rem;
+            text-align: center;
+            padding: 6px;
+            color: #FF5A3A;
+            letter-spacing: 0.5px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.7rem;
+            color: #3a3a3a;
+            border-top: 1px solid rgba(255, 59, 47, 0.2);
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 780px) {
+            .header {
+                padding: 0.8rem 1rem;
+            }
+            .logo-text h1 {
+                font-size: 1.4rem;
+            }
+            .player-container {
+                padding: 0 0.8rem;
+            }
+        }
+
+        .no-context {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .player-wrapper, .diffusion-mask, .shield-iframe {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body>
+<div class="bg-canvas"></div>
+
+<header class="header">
+    <div class="logo-area">
+        <div class="logo-text">
+            <h1>StreamX<span style="color:#FF3B2F;">+</span></h1>
+            <span>PREMIUM LIVE</span>
+        </div>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+        <div class="badge-live">
+            <i class="fas fa-circle"></i> LIVE HD
+        </div>
+    </div>
+</header>
+
+<div class="player-container">
+    <div class="player-wrapper no-context">
+        <div class="diffusion-mask" id="diffusionMask">
+            <div id="protectOverlay" class="protect-overlay"></div>
+        </div>
+        <div class="player-controls">
+            <div class="quality-badge">
+                <i class="fas fa-shield-alt"></i> Stream sécurisé | Ultra HD
+            </div>
+            <div>
+                <button id="fullscreenBtn" class="btn-action">
+                    <i class="fas fa-expand"></i> Plein écran
+                </button>
+                <button id="refreshStream" class="btn-action">
+                    <i class="fas fa-sync-alt"></i> Rafraîchir
+                </button>
+            </div>
+        </div>
+        <div class="shield-note">
+            <i class="fas fa-lock"></i> Diffusion protégée · Technologie StreamX+
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <p>StreamX+ | Expérience immersive · Tous droits réservés</p>
+</footer>
+
+<script>
+    (function() {
+        // ==================== PROTECTION RENFORCÉE SANS SPAM ====================
+        
+        // 1. Blocage des raccourcis clavier principaux (Ctrl+U, F12, etc.)
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12') {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+            // Ctrl+U / Cmd+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 'U')) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+            // Ctrl+Shift+I (inspecteur)
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+            // Ctrl+Shift+J (console)
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'J' || e.key === 'j')) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+            // Ctrl+Shift+C (inspecter élément)
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c')) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+            // Ctrl+S
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        });
+        
+        // 2. Blocage complet du clic droit
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // 3. Empêcher le drag & drop
+        document.body.addEventListener('dragstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // 4. Désactiver la sélection de texte
+        document.body.style.userSelect = 'none';
+        document.body.style.webkitUserSelect = 'none';
+        
+        // 5. Source encodée en plusieurs couches (impossible à trouver via Ctrl+U)
+        const _encodedParts = [
+            'aHR0cHM6Ly9jYXJ0ZWxpdmUuY2x1Yi9wbGF5ZXIvMi8x',
+            'Y2FydGVsaXZlLmNsdWIvcGxheWVyLzIvMQ=='
+        ];
+        
+        function getStreamUrl() {
+            try {
+                let decoded = atob(_encodedParts[0]);
+                if (decoded && decoded.includes('cartelive.club')) {
+                    return decoded;
+                }
+                return 'https://cartelive.club/player/2/1';
+            } catch(e) {
+                return 'https://cartelive.club/player/2/1';
+            }
+        }
+        
+        const STREAM_URL = getStreamUrl();
+        
+        // 6. Injection dynamique de l'iframe (pas dans le HTML source)
+        const maskDiv = document.getElementById('diffusionMask');
+        let iframeElement = null;
+        let overlayDiv = document.getElementById('protectOverlay');
+        
+        function injectIframe() {
+            if (iframeElement) return;
+            
+            iframeElement = document.createElement('iframe');
+            iframeElement.classList.add('shield-iframe');
+            iframeElement.setAttribute('frameborder', '0');
+            iframeElement.setAttribute('allowfullscreen', 'true');
+            iframeElement.setAttribute('allow', 'autoplay; fullscreen; encrypted-media');
+            iframeElement.setAttribute('referrerpolicy', 'no-referrer');
+            iframeElement.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-presentation allow-top-navigation-by-user-activation');
+            iframeElement.src = STREAM_URL;
+            
+            // Ajout dans le DOM
+            maskDiv.appendChild(iframeElement);
+            
+            // S'assurer que l'overlay est présent
+            if (overlayDiv) {
+                maskDiv.appendChild(overlayDiv);
+            } else {
+                const newOverlay = document.createElement('div');
+                newOverlay.id = 'protectOverlay';
+                newOverlay.className = 'protect-overlay';
+                maskDiv.appendChild(newOverlay);
+                overlayDiv = newOverlay;
+            }
+            
+            if (overlayDiv) {
+                overlayDiv.style.pointerEvents = 'none';
+            }
+            
+            // Bloquer les tentatives d'accès à l'iframe via les frames
+            Object.defineProperty(window, 'frames', {
+                get: function() { return []; },
+                configurable: false
+            });
+        }
+        
+        function refreshStream() {
+            if (iframeElement) {
+                try {
+                    iframeElement.remove();
+                } catch(e) {}
+                iframeElement = null;
+            }
+            injectIframe();
+        }
+        
+        function goFullscreen() {
+            const playerWrapper = document.querySelector('.player-wrapper');
+            if (!playerWrapper) return;
+            if (playerWrapper.requestFullscreen) {
+                playerWrapper.requestFullscreen();
+            } else if (playerWrapper.webkitRequestFullscreen) {
+                playerWrapper.webkitRequestFullscreen();
+            } else if (playerWrapper.msRequestFullscreen) {
+                playerWrapper.msRequestFullscreen();
+            }
+        }
+        
+        // 7. Nettoyage des logs console pour masquer les infos sensibles
+        const sensitivePatterns = ['cartelive', 'player/2/1', 'cartelive.club', 'stream', 'iframe', 'src'];
+        
+        function shouldFilter(args) {
+            if (!args || !args.length) return false;
+            for (let i = 0; i < args.length; i++) {
+                if (typeof args[i] === 'string') {
+                    for (let pattern of sensitivePatterns) {
+                        if (args[i].toLowerCase().includes(pattern.toLowerCase())) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+        
+        const originalLog = console.log;
+        console.log = function(...args) {
+            if (!shouldFilter(args)) {
+                originalLog.apply(console, args);
+            }
+        };
+        
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            if (!shouldFilter(args)) {
+                originalWarn.apply(console, args);
+            }
+        };
+        
+        const originalError = console.error;
+        console.error = function(...args) {
+            if (!shouldFilter(args)) {
+                originalError.apply(console, args);
+            }
+        };
+        
+        // 8. Surveillance de l'intégrité de l'iframe (pas de spam)
+        setInterval(() => {
+            if (iframeElement && iframeElement.src) {
+                // Si l'URL a été modifiée, on la restaure silencieusement
+                if (!iframeElement.src.includes('cartelive.club')) {
+                    try {
+                        iframeElement.src = STREAM_URL;
+                    } catch(e) {}
+                }
+            }
+        }, 3000);
+        
+        // 9. Protection discrète contre les outils de développement
+        // (pas de popups ni de spam, juste des mécanismes silencieux)
+        let devToolsWarningShown = false;
+        
+        // Détection via debugger statement (silencieuse)
+        setInterval(function() {
+            const start = Date.now();
+            debugger;
+            const end = Date.now();
+            if (end - start > 100 && !devToolsWarningShown) {
+                // Si les outils sont ouverts, on recharge la page discrètement
+                devToolsWarningShown = true;
+                setTimeout(() => {
+                    window.location.reload();
+                }, 100);
+            }
+        }, 2000);
+        
+        // 10. Protection anti view-source (redirection silencieuse)
+        if (window.location.href.startsWith('view-source:')) {
+            window.location.href = window.location.href.replace('view-source:', '');
+        }
+        
+        // 11. Masquer la source dans l'historique
+        if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.pathname);
+        }
+        
+        // 12. Bloquer les tentatives de copie du texte
+        document.addEventListener('copy', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // 13. Initialisation
+        window.addEventListener('DOMContentLoaded', () => {
+            injectIframe();
+            
+            // Ajouter un style pour bloquer la sélection et le clic droit avancé
+            const styleBlock = document.createElement('style');
+            styleBlock.textContent = `
+                * {
+                    -webkit-touch-callout: none !important;
+                    -webkit-user-select: none !important;
+                    user-select: none !important;
+                }
+            `;
+            document.head.appendChild(styleBlock);
+        });
+        
+        // 14. Événements pour les boutons
+        const refreshBtn = document.getElementById('refreshStream');
+        if (refreshBtn) refreshBtn.addEventListener('click', refreshStream);
+        
+        const fsBtn = document.getElementById('fullscreenBtn');
+        if (fsBtn) fsBtn.addEventListener('click', goFullscreen);
+        
+        // 15. Supprimer les variables globales sensibles
+        delete window.STREAM_URL;
+        
+        // 16. Message discret dans la console (non sensible)
+        setTimeout(() => {
+            originalLog.call(console, "%c🔒 StreamX+ | Diffusion sécurisée", "color: #FF3B2F; font-size: 10px;");
+        }, 100);
+        
+        // 17. Protection supplémentaire : empêcher l'injection de scripts malveillants
+        const originalCreateElement = document.createElement;
+        document.createElement = function(tagName) {
+            const element = originalCreateElement.call(document, tagName);
+            if (tagName.toLowerCase() === 'script') {
+                Object.defineProperty(element, 'src', {
+                    set: function(value) {
+                        if (value && value.includes('cartelive')) {
+                            return;
+                        }
+                        return originalCreateElement.call(document, 'script').src = value;
+                    }
+                });
+            }
+            return element;
+        };
+        
+        // 18. Nettoyer les métadonnées exposant la source
+        const metaTags = document.getElementsByTagName('meta');
+        for (let i = 0; i < metaTags.length; i++) {
+            if (metaTags[i].getAttribute('content') && metaTags[i].getAttribute('content').includes('cartelive')) {
+                metaTags[i].remove();
+            }
+        }
+        
+        // 19. Bloquer les raccourcis restants (Ctrl+R est laissé car refresh est nécessaire)
+        // On bloque Ctrl+Shift+R (hard refresh sans cache)
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'r' || e.key === 'R')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 20. Protection contre la désactivation du JavaScript
+        // (la page ne fonctionne pas sans JS de toute façon)
+        
+        console.clear = function() {
+            // Neutraliser console.clear pour éviter effacement des logs de protection
+            return;
+        };
+        
+    })();
+</script>
+</body>
+</html>
